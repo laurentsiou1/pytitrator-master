@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>spectro_config</class>
+ <widget class="QDialog" name="spectro_config">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1799</width>
+    <height>962</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Spectrometry Configuration</string>
+  </property>
+  <property name="accessibleName">
+   <string/>
+  </property>
+  <widget class="QDialogButtonBox" name="buttonBox">
+   <property name="geometry">
+    <rect>
+     <x>1640</x>
+     <y>850</y>
+     <width>131</width>
+     <height>71</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Vertical</enum>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_background">
+   <property name="geometry">
+    <rect>
+     <x>1560</x>
+     <y>130</y>
+     <width>191</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Background</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_ref">
+   <property name="geometry">
+    <rect>
+     <x>1560</x>
+     <y>440</y>
+     <width>91</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Référence</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_intensity">
+   <property name="geometry">
+    <rect>
+     <x>1560</x>
+     <y>760</y>
+     <width>101</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Intensity</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_abs">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>30</y>
+     <width>121</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Absorbance</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="refresh_background">
+   <property name="geometry">
+    <rect>
+     <x>1560</x>
+     <y>180</y>
+     <width>81</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>refresh</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="refresh_ref">
+   <property name="geometry">
+    <rect>
+     <x>1560</x>
+     <y>490</y>
+     <width>81</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>refresh</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="Tint">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>710</y>
+     <width>71</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>1000</number>
+   </property>
+   <property name="value">
+    <number>10</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_tint">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>680</y>
+     <width>71</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>T int</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_avg">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>680</y>
+     <width>81</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>averaging</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="avg">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>710</y>
+     <width>71</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>500</number>
+   </property>
+   <property name="value">
+    <number>1</number>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="shutter">
+   <property name="geometry">
+    <rect>
+     <x>370</x>
+     <y>710</y>
+     <width>131</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Shutter</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="acquisition_delay_display">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>760</y>
+     <width>401</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>acquisition delay : </string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="recording_delay_display">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>810</y>
+     <width>341</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>recording delay : </string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="refresh_rate_display">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>890</y>
+     <width>341</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>refreshing rate : </string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="EDcorr_box">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>800</y>
+     <width>241</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Electric dark correction</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="NLcorr_box">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>710</y>
+     <width>241</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Nonlinearity correction</string>
+   </property>
+  </widget>
+  <widget class="PlotWidget" name="background_widget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>960</x>
+     <y>10</y>
+     <width>551</width>
+     <height>301</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="PlotWidget" name="reference_widget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>959</x>
+     <y>319</y>
+     <width>551</width>
+     <height>311</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="PlotWidget" name="intensity_widget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>960</x>
+     <y>640</y>
+     <width>551</width>
+     <height>311</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="PlotWidget" name="absorbance_widget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>80</y>
+     <width>931</width>
+     <height>581</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_model">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>30</y>
+     <width>301</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>device model : </string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="averaging_delay_display">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>860</y>
+     <width>341</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>averaging delay : </string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="absorbance_processing_delay_display">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>910</y>
+     <width>391</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>absorbance processing delay : </string>
+   </property>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PlotWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">pyqtgraph</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>spectro_config</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>spectro_config</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

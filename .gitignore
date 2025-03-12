@@ -1,0 +1,26 @@
+# gitignore file 
+
+# ignore folders in link with the pyinstaller process
+/dist/
+/build/
+/Dommino.spec/
+#documentation process
+/doc/
+#python local installation
+/laulau_env/
+#obsolete or inactive files
+/obsolete/
+/tests/
+/MEASURES/
+/SEQUENCE FILES/
+
+#log
+/phidgetlog.log/
+
+#compiled python files
+/__pycache__/
+/windows/__pycache__/
+/subsystems/__pycache__/
+/graphic/__pycache__/
+/subsystems/windows/__pycache__/
+
