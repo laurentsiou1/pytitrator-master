@@ -28,13 +28,13 @@ from lib.oceandirect.od_logger import od_logger
 
 #chemin du repertoire _internal lors du lancement de l'exe
 path_internal=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-green_led_path=os.path.join(path_internal, "graphic/images/green-led-on.png")
+green_led_path=os.path.join(path_internal, "graphic/images/green-led-on.png") # dans le cas d'un lancement avec l'executable
 red_led_path=os.path.join(path_internal, "graphic/images/red-led-on.png")
 
 class ControlPanel(QMainWindow, Ui_ControlPanel):
     def __init__(self, ihm, parent=None):
-        
-        #appareils
+     # Initialisation de la fenêtre   
+        # Appareils
         self.ihm=ihm
         self.phmeter=ihm.phmeter
         self.spectro_unit=ihm.spectro_unit
@@ -42,27 +42,30 @@ class ControlPanel(QMainWindow, Ui_ControlPanel):
         self.peristaltic_pump=ihm.peristaltic_pump
         self.circuit=ihm.circuit
         
-        #graphique
+        # Graphique - Chargement de l'interface et affichages des LEDs
         super(ControlPanel,self).__init__(parent)
-        self.setupUi(self)
+        self.setupUi(self) # /!\ Charge l'interface graphique ! via le fichier généré par python de QtDesigner
         
-        if os.path.exists(green_led_path):  #lors d'un lancement avec le dossier d'executable
+        if os.path.exists(green_led_path):  #lors d'un lancement avec le dossier d'executable 
             self.pixmap_green=QtGui.QPixmap(green_led_path)
             self.pixmap_red=QtGui.QPixmap(red_led_path)
         else:
             self.pixmap_green=QtGui.QPixmap("graphic/images/green-led-on.png")
             self.pixmap_red=QtGui.QPixmap("graphic/images/red-led-on.png")
         
-        #Paramètres affichés
-        self.label_instrument_SN.setText("instrument S/N : "+self.ihm.instrument_id)
+        # Paramètres affichés --> c'est ici qu'on affiche certaines chose sur le control panel... les boutons, les menus déroulants, ...
+        self.label_instrument_SN.setText("instrument S/N : "+self.ihm.instrument_id) # N° de série de l'instrument 
         parser = ConfigParser()
         parser.read(ihm.app_default_settings)
-        #menus déroulants
-        self.electrode_box.appendPlainText(str(parser.get('electrode', 'default')))
-        self.stab_step.setValue(float(parser.get('phmeter', 'epsilon')))
-        self.stab_time.setValue(int(parser.get('phmeter', 'delta')))
+        
+        # menus déroulants 
+        self.electrode_box.appendPlainText(str(parser.get('electrode', 'default'))) # Phmètre - text box
+        self.stab_step.setValue(float(parser.get('phmeter', 'epsilon'))) # Phmètre : menu dérulant epsilon
+        self.stab_time.setValue(int(parser.get('phmeter', 'delta'))) # Phmètre : menu dérulant delta
+        
         #Spectromètre
-        self.shutter.setChecked(True)   #shutter is closed before connecting spectrometer
+        self.shutter.setChecked(True)  # Shutter is closed before connecting spectrometer
+       
         #Peristaltic pump
         self.connect_disconnect_circuit.setText("Connect")
         self.start_stop_pump_button.setText("Start")
@@ -126,28 +129,29 @@ class ControlPanel(QMainWindow, Ui_ControlPanel):
         self.Spectrum_direct.setObjectName("Spectrum_direct")
 
         #connexions
-        self.electrode_box.textChanged.connect(self.update_electrode_model)
-        self.connect_phmeter.clicked.connect(self.link_pHmeter2IHM)
-        self.cal_button.clicked.connect(self.ihm.openCalibWindow)
+        self.electrode_box.textChanged.connect(self.update_electrode_model) # Text edit pour changer le nom de l'electrode - de la methode "update_electrode_model" définit ici
+        self.connect_phmeter.clicked.connect(self.link_pHmeter2IHM) # bouton de connexion du phmeter - idem methode définit ici
+        self.cal_button.clicked.connect(self.ihm.openCalibWindow) # bouton pour ouvrir la fenettre de calibration  - idem méthode défini ici
 
-        self.connect_disconnect_spectro_button.clicked.connect(self.connect_disconnect_spectrometer)
-        self.spectro_settings.clicked.connect(self.OnClick_spectro_settings)
+        self.connect_disconnect_spectro_button.clicked.connect(self.connect_disconnect_spectrometer) # bouton connect du spectro
+        self.spectro_settings.clicked.connect(self.OnClick_spectro_settings) # bouton de setttings
         
-        self.connect_syringe_pump.clicked.connect(self.connectSyringePump)
-        self.open_syringe_panel.clicked.connect(self.ihm.openDispenserWindow)
+        self.connect_syringe_pump.clicked.connect(self.connectSyringePump) # bouton de connexion du boitier titrage "connect syringe pump"
+        self.open_syringe_panel.clicked.connect(self.ihm.openDispenserWindow) # bouton d'ouverture de "syringe panel"
         
-        self.connect_disconnect_circuit.clicked.connect(self.connexionChange_circuit)
-        self.pump_speed.valueChanged.connect(self.update_pump_speed)
-        self.ev0_state.clicked.connect(self.ev0_changeState)
-        self.ev1_state.clicked.connect(self.ev1_changeState)
+        self.connect_disconnect_circuit.clicked.connect(self.connexionChange_circuit) # Circuit et pompe 
+        self.pump_speed.valueChanged.connect(self.update_pump_speed)  # vitesse pompe
+        self.ev0_state.clicked.connect(self.ev0_changeState) # etat eV0
+        self.ev1_state.clicked.connect(self.ev1_changeState) # etat eV1
         #self.fill_water.clicked.connect(self.fillWater)
         #self.clean_empty.clicked.connect(self.cleanAndEmpty)
         
-        self.connect_all_devices.clicked.connect(self.connectAllDevices)
-        self.ihm.timer_display.timeout.connect(self.refresh_screen)
+        self.connect_all_devices.clicked.connect(self.connectAllDevices) # coonnexion de tous les devices
+        self.ihm.timer_display.timeout.connect(self.refresh_screen) 
         
-        self.configure_sequence.clicked.connect(self.ihm.openConfigWindow)
-        self.action_edit_folder.triggered.connect(self.ihm.openSettingsWindow)    #choix dossier
+        # sequences titrage "Configure Sequences"
+        self.configure_sequence.clicked.connect(self.ihm.openConfigWindow) # bouton "Configure Sequence"
+        self.action_edit_folder.triggered.connect(self.ihm.openSettingsWindow)    #choix dossier 
         self.save_button.clicked.connect(self.ihm.createDirectMeasureFile)  #deux façons de sauver les données
         self.action_save.triggered.connect(self.ihm.createDirectMeasureFile) 
         self.action_open_settings.triggered.connect(self.ihm.openSettingsWindow) #config des seringues
@@ -199,7 +203,7 @@ class ControlPanel(QMainWindow, Ui_ControlPanel):
                                 
                                 ### Méthodes pour le pH mètre
     
-    def link_pHmeter2IHM(self):
+    def link_pHmeter2IHM(self): # Gestion du pH-mètre
         if self.phmeter.state=='closed':
             self.phmeter.connect()
         if self.phmeter.state=='open':
@@ -250,7 +254,7 @@ class ControlPanel(QMainWindow, Ui_ControlPanel):
         self.phmeter.getCalData()
         self.refreshCalibrationText()"""
     
-    def refreshCalibrationText(self):
+    def refreshCalibrationText(self): # Connecte le pH-mètre et met à jour l'affichage.
         self.calib_text = ("Current calibration data:\npH meter : "+str(self.phmeter.CALmodel)
         +"\nelectrode : "+str(self.phmeter.CALelectrode)+"\ndate: "+str(self.phmeter.CALdate)
         +"\npH buffers: "+str(self.phmeter.CALtype)+"\nRecorded voltages:\nU4="+str(self.phmeter.U1)
@@ -261,7 +265,7 @@ class ControlPanel(QMainWindow, Ui_ControlPanel):
 
 
                                         ### Methods for Spectrometer
-    def connect_disconnect_spectrometer(self):
+    def connect_disconnect_spectrometer(self): # Connecte ou déconnecte le spectromètre.
         if self.spectro_unit.state=='closed':
             self.spectro_unit.connect()
         elif self.spectro_unit.state=='open':
@@ -328,7 +332,7 @@ class ControlPanel(QMainWindow, Ui_ControlPanel):
 
 
                                     ### Methods for Syringe pumps
-    def connectSyringePump(self):
+    def connectSyringePump(self): # Connecte la pompe seringue et met à jour l’interface.
         self.dispenser.connect()
         if self.dispenser.state=='open':
             self.led_disp.setPixmap(self.pixmap_green)
@@ -357,7 +361,7 @@ class ControlPanel(QMainWindow, Ui_ControlPanel):
         self.added_total.setText("0" )
 
     ### Peristaltic pump and circuit
-    def connexionChange_circuit(self):
+    def connexionChange_circuit(self): # Gestion de la Pompe Péristaltique et du Circuit - Connecte la pompe péristaltique et met à jour l'affichage.
         if self.circuit.state=='closed':
             self.connectCircuit()
         elif self.circuit.state=='open':
@@ -385,12 +389,13 @@ class ControlPanel(QMainWindow, Ui_ControlPanel):
         self.change_dir.clicked.connect(self.peristaltic_pump.change_direction)
         self.pump_speed.valueChanged.connect(self.update_pump_speed)
 
-    def start_stop_pump(self):
+    def start_stop_pump(self): # Démarre ou arrête la pompe.
         """Start or stop Peristaltic pump and displays on button"""
         self.peristaltic_pump.start_stop()
         self.start_stop_pump_button.setText(self.peristaltic_pump.text())
 
     def update_pump_speed(self):
+        """Règle la vitesse de pompe selon la valeur lu sur l'interface"""
         self.peristaltic_pump.setSpeed_voltage(self.peristaltic_pump.scale2volts(self.pump_speed.value()))
 
     def ev0_changeState(self):

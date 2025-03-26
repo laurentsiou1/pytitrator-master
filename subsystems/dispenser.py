@@ -338,10 +338,10 @@ class PhidgetStepperPump(SyringePump): #remplace l'ancienne classe SyringePump
             state=False
         return state
 
-    def stop_syringe_full(self, reference_switch, state):
+    def stop_syringe_full(self, reference_switch, state): # Methode Phidget. reference_switch = ancien nom donné a l'interrupteur full (= sereingue pleine). Etat de l'interrupteur. 
         print("state change on full syringe switch :", state)
         if state == False:
-            self.stepper.setEngaged(False)
+            self.stepper.setEngaged(False) # arret moteur. On a touché l'interrupteur. 
             print("reference switch hit - motor stop")
             time.sleep(1) #stabilisation du moteur
             if self.mode=='normal':
@@ -353,7 +353,7 @@ class PhidgetStepperPump(SyringePump): #remplace l'ancienne classe SyringePump
         else:
             print("switch closes again")
 
-    def stop_syringe_empty(self, security_switch, state):
+    def stop_syringe_empty(self, security_switch, state): # pour les interrupteurs du haut.
         print("state change on empty syringe switch :", state)
         if state == False: #switch has just opened
             #print("security stop \nself:",self,"security_switch:",security_switch,"state",state)
@@ -465,7 +465,7 @@ class PhidgetStepperPump(SyringePump): #remplace l'ancienne classe SyringePump
         if vol >= 0:     #and vol <= self.size-pos0+10:   
             #+10 est une marge pour pouvoir dépasser légèrement le niveau complet     
             self.configForDispense(ev)
-            self.stepper.setTargetPosition(pos0+vol)
+            self.stepper.setTargetPosition(pos0+vol) # fonction "principal" pour faire bouger les moteurs
             #lancement
             code,valid=self.validity_code()
             if valid:
@@ -620,6 +620,7 @@ if __name__=="__main__":
 
 class KDS_Legato100(SyringePump):
     #Le pousse seringue doit être configuré en amont avec la bonne seringue
+    # pousse seringue du commerce - communication en portserie via python
 
     def __init__(self):
         self.ser=serial.Serial('COM3', timeout = 2, stopbits=2)  #COM3 peut changer, à vérifier

@@ -1,6 +1,11 @@
 """Classe IHM qui contient des attributs communs à toutes les fenêtres PyQt"""
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import QTimer, QObject
+from PyQt5 import QtWidgets
+
+from PyQt5.QtWidgets import QApplication
+import sys
 
 from configparser import ConfigParser
 import os
@@ -15,10 +20,10 @@ from lib.oceandirect.OceanDirectAPI import Spectrometer as Sp, OceanDirectAPI
 from lib.oceandirect.od_logger import od_logger
 
 #Instruments
-from subsystems.pHmeter import PHMeter
+from subsystems.pHmeter import PHMeter  # ici on importe la classe PHmeter à partir du fichier python pHmeter
 from subsystems.absorbanceMeasure import AbsorbanceMeasure
 from subsystems.dispenser import Dispenser, PhidgetStepperPump
-from subsystems.peristalticPump import PeristalticPump
+from subsystems.peristalticPump import PeristalticPump # ici on importe la classe PHmeter à partir du fichier python pHmeter
 from subsystems.circuit import Circuit
 
 #Windows
@@ -34,7 +39,7 @@ from windows.settings_window import SettingsWindow
 path = Path(__file__)
 ROOT_DIR = path.parent.absolute()
 
-class IHM:
+class IHM(QObject): # modif laulau, ajout de QObject pour eviter l'erreur lors de l'execution de ce bout de code
 
     app_default_settings = os.path.join(ROOT_DIR, "config/app_default_settings.ini")
     device_ids = os.path.join(ROOT_DIR, "config/device_id.ini")
@@ -51,7 +56,7 @@ class IHM:
     #Sous sytèmes 
     #On créée les instances de chaque sous système ici. L'état est 'closed' par défaut
     spectro_unit=AbsorbanceMeasure()
-    phmeter=PHMeter()
+    phmeter=PHMeter()   # par exemple, ici, il a instancier la classe PHmeter 
     dispenser=Dispenser()
     peristaltic_pump=PeristalticPump()
     circuit=Circuit(peristaltic_pump)
@@ -60,14 +65,15 @@ class IHM:
 
     instrument_id=''    #SN unknown at opening
 
-    def __init__(self):
+    def __init__(self): # Initialisation - "méthode spéciale" intitulé constructeur (s'execute automatiquement quand on créé un objet)
+        super().__init__()  # Appelle le constructeur de QObject
         
-        #Config for savings
+        #Config for savings (Object)
         parser = ConfigParser()
         parser.read(self.app_default_settings)
         self.saving_folder=parser.get('saving parameters', 'folder')       
   
-        #Configs for Automatic sequence
+        #Configs for Automatic sequence (Object)
         self.experience_name=None
         self.description=None
         self.fibers=parser.get('setup', 'fibers')
@@ -75,7 +81,7 @@ class IHM:
         self.N_mes=None #number of pH/spectra measures
         self.dispense_mode=parser.get('sequence', 'dispense_mode')
 
-        #classic
+        #classic (Object)
         self.fixed_delay_sec=int(parser.get('classic titration sequence', 'fixed_delay_sec'))
         self.mixing_delay_sec=int(parser.get('classic titration sequence', 'mixing_delay_sec'))
         self.initial_pH=None
@@ -85,20 +91,35 @@ class IHM:
         self.added_B_uL = 0
         self.added_C_uL = 0
 
-        #custom
+        #custom (Object)
         self.sequence_config_file=parser.get('custom sequence', 'sequence_file') 
 
-        #display timer
-        self.timer_display = QtCore.QTimer()
-        self.timer_display.setInterval(1000)    #timeout every 1s
+        #display timer (Object)
+        self.timer_display = QTimer(self)
+        self.timer_display.setInterval(1000)
         self.timer_display.start()
-
-        #Gestion des connexions/déconnexions
+       
+        #Gestion des connexions/déconnexions (Object)
         self.manager.setOnAttachHandler(self.AttachHandler)
         self.manager.setOnDetachHandler(self.DetachHandler)
         self.manager.open()
 
-    def AttachHandler(self, man, channel):
+        # Ajout d'une variable pour suivre les alertes des switchs
+        self.switch_alerts = {}
+        
+        # Définition des switchs
+        self.switch_names = {
+        self.dispenser.syringe_A.ch_full: "Full A",
+        self.dispenser.syringe_A.ch_empty: "Empty A",
+        self.dispenser.syringe_B.ch_full: "Full B",
+        self.dispenser.syringe_B.ch_empty: "Empty B",
+        self.dispenser.syringe_C.ch_full: "Full C",
+        self.dispenser.syringe_C.ch_empty: "Empty C"
+        }
+
+    def AttachHandler(self, man, channel): # Méthode normale - pour une action specifique 
+        """s'execute lors du branchemnt des cartes phidget
+        Les trois arguments de cette fonction ne peuvent pas être enlevés"""
         serialNumber = channel.getDeviceSerialNumber()
         deviceName = channel.getDeviceName()
         channelName = channel.getChannelName()
@@ -114,6 +135,7 @@ class IHM:
             self.loadBoardsSerialNumbers('interface board',serialNumber)
 
     def loadBoardsSerialNumbers(self, board, nb):
+        """Ecrit dans le fichier device ids les numeros de serie des deux cartes (vint et interfacing)"""
         parser = ConfigParser()
         parser.read(self.device_ids)
         if board=='VINT':
@@ -133,6 +155,7 @@ class IHM:
             self.getInstrumentSerialNumber()
 
     def getInstrumentSerialNumber(self):
+        """Recupere le numéro de série dommino, et modifie l'argument self.instrument_id"""
         parser = ConfigParser()
         parser.read(self.device_ids)
         if self.board_number == self.id01:
@@ -149,6 +172,10 @@ class IHM:
             pass
 
     def DetachHandler(self, man, channel):
+        """S'execute lors du debranchement ou mise hors tension d'une des voies
+        Les arguments ne peuvent pas etre enleves""" # en fait, DetachHandler est une fonction fournis par Phidget. Elle attend 3 arguments, donc obligé de les mettres.
+        # La fonction (methode) DetachHandler permet de passer les instruments à l'état "closed" si déconnexion / perte de focus / arret de DOMMINO / pb sur les entrées
+        # C'est un principe définit par Francois pour ne pas avoir des message d'erreur dans tous les sens si le Phmeter n'est pas connecté par exemple. Juste, il est a l'état 'closed'
         serialNumber = channel.getDeviceSerialNumber()
         deviceName = channel.getDeviceName()
         channelName = channel.getChannelName()
@@ -156,19 +183,52 @@ class IHM:
         hubPort=channel.getHubPort()
         isChannel=channel.getIsChannel()
         #print("Disconnected : ",serialNumber,"--",deviceName,"--","port : ",hubPort,isChannel,"--",channelName,"--","channel : ",ch_num)
-
+               
         #pH meter
-        if deviceName=='PhidgetInterfaceKit 8/8/8' and channelName=='Voltage Input' and ch_num==0:
+        if deviceName=='PhidgetInterfaceKit 8/8/8' and channelName=='Voltage Input' and ch_num==self.phmeter.ch_phmeter:  #la voie 0 peut etre remplcée par le numero de la voie phmeter ecrite dans device_ids
+            # Modif de la ligne 168 pour afficher la voie 0 de l'electrode du PHmeter ecrit dans "devuce_id.ini"
             self.phmeter.state='closed'
             print("pH meter disconnected")
             self.controlPanel.led_phmeter.setPixmap(self.controlPanel.pixmap_red)
         #Lamp control
 
-        #Dispenser
-        if deviceName=='PhidgetInterfaceKit 8/8/8' and channelName=='Digital Input' and ch_num==0:
-            self.dispenser.state='closed'
-            print("Syringe pump disconnected due to switchs unaccessible")
-            self.controlPanel.led_disp.setPixmap(self.controlPanel.pixmap_red)
+        #Dispenser - Boitier titrage
+        # switchs - on rajoute chaque cas de switch. Car possibilité de problème hard / file coupé, entrées cramée ou autres...
+        if deviceName == 'PhidgetInterfaceKit 8/8/8' and channelName == 'Digital Input':     # Code modifié, à tester sur DOMMINO - vLS 18.03.2025
+            if ch_num in self.switch_names:  # Vérifie si le channel correspond à un switch connu
+                print(f"Détection d'un problème sur {self.switch_names[ch_num]} (Channel {ch_num})")  # Test 
+                self.dispenser.state = 'closed'
+                self.controlPanel.led_disp.setPixmap(self.controlPanel.pixmap_red)
+
+            # Afficher un message UNE SEULE FOIS par switch
+                if ch_num not in self.switch_alerts:
+                    switch_name = self.switch_names[ch_num]  # Récupère le nom du switch
+                    QtWidgets.QMessageBox.warning(self, "Syringe pump disconnected due to", f"switch {switch_name} ({ch_num})")
+                    self.switch_alerts[ch_num] = True  # Marquer ce switch comme déjà signalé
+                    
+        # Ancien code trop de redondance et trop de print...
+        #if deviceName=='PhidgetInterfaceKit 8/8/8' and channelName=='Digital Input' and ch_num==self.dispenser.syringe_A.ch_full: #switch 0 (bas gauche)
+                  #   self.dispenser.state='closed'
+            # print("Syringe pump disconnected due to switch 0 unaccessible") # Modif laulau switch 0 (avant switchs)
+            # self.controlPanel.led_disp.setPixmap(self.controlPanel.pixmap_red)
+        
+      #  if deviceName=='PhidgetInterfaceKit 8/8/8' and channelName=='Digital Input' and ch_num==self.dispenser.syringe_A.ch_empty: #switch 1 (haut gauche)
+          #  self.dispenser.state='closed'
+            # print("Syringe pump disconnected due to switch 1 unaccessible")
+       # if deviceName=='PhidgetInterfaceKit 8/8/8' and channelName=='Digital Input' and ch_num==self.dispenser.syringe_B.ch_full: #switch 2 (bas milieu)
+          #  self.dispenser.state='closed'
+            # print("Syringe pump disconnected due to switch 2 unaccessible")
+       # if deviceName=='PhidgetInterfaceKit 8/8/8' and channelName=='Digital Input' and ch_num==self.dispenser.syringe_B.ch_empty: #switch 3 (haut milieu)
+          #  self.dispenser.state='closed'
+            # print("Syringe pump disconnected due to switch 3 unaccessible")
+       # if deviceName=='PhidgetInterfaceKit 8/8/8' and channelName=='Digital Input' and ch_num==self.dispenser.syringe_C.ch_full: #switch 4 (bas droite)
+           # self.dispenser.state='closed'
+            # print("Syringe pump disconnected due to switch 4 unaccessible")
+      #  if deviceName=='PhidgetInterfaceKit 8/8/8' and channelName=='Digital Input' and ch_num==self.dispenser.syringe_C.ch_empty: #switch 5 (haut droite)
+          #  self.dispenser.state='closed'
+            # print("Syringe pump disconnected due to switch 5 unaccessible")
+
+        # moteurs :
         if deviceName=='4A Stepper Phidget' and hubPort==0:
             #stepper A de pousse seringue débranché
             self.dispenser.syringe_A.state='closed'
@@ -198,7 +258,7 @@ class IHM:
             print("Unable to control lamp")
             self.controlPanel.led_spectro.setPixmap(self.controlPanel.pixmap_red)
 
-    def close_all_devices(self):
+    def close_all_devices(self): # ferme tous les devices
         print("Closing all device")
         self.updateDefaultParam()
         if self.spectro_unit.state=='open':
@@ -212,7 +272,7 @@ class IHM:
         elif self.peristaltic_pump.state=='open':
             self.peristaltic_pump.close()
               
-    def updateDefaultParam(self):
+    def updateDefaultParam(self): # update les paramètres par défaut. En fait, il n'y a pas vraiment de parametre par defaut, mais ca prend les dernières valeurs
         """Updates current parameters as default in file 'config/app_default_settings'"""
         parser = ConfigParser()
         parser.read(self.app_default_settings)
@@ -235,7 +295,7 @@ class IHM:
         file.close()
         print("updates current parameters in default file")
 
-    def createDirectMeasureFile(self):
+    def createDirectMeasureFile(self): # A VOIR.... 
         dt = datetime.now()
         date_text=dt.strftime("%m/%d/%Y %H:%M:%S")
         date_time=dt.strftime("%m-%d-%Y_%Hh%Mmin%Ss")
@@ -343,6 +403,8 @@ class IHM:
             self.sequenceWindow = CustomSequenceWindow(self)
             self.sequenceWindow.show()
 
-if __name__=="main":
+if __name__=="__main__":
+    app = QApplication(sys.argv)  # Assure qu'une instance QApplication est active
     interface = IHM()
+    sys.exit(app.exec_())  # Démarre l'application PyQt5
     print(interface.saving_folder)

@@ -21,7 +21,7 @@ class SettingsWindow(QDialog,Ui_Dialog): #(object)
         parser.read(ihm.app_default_settings)
 
         #Sauvegarde de la config
-        self.buttonBox.accepted.connect(self.update)
+        self.buttonBox.accepted.connect(self.update) # python n'execute pas la methode "update", il crée un lien. si on appuie sur le boutton, ca prendra en comtpe. 
 
         #consignes de dispense
         self.disp_A.clicked.connect(self.syringe_A.standard_dispense_for_calib)

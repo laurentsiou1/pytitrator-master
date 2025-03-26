@@ -20,33 +20,33 @@ from PyQt5 import QtCore
 import subsystems.processing as sp
 
 path = Path(__file__)
-ROOT_DIR = path.parent.parent.absolute() #répertoire pytitrator
-app_default_settings = os.path.join(ROOT_DIR, "config/app_default_settings.ini")
-device_ids = os.path.join(ROOT_DIR, "config/device_id.ini")
+ROOT_DIR = path.parent.parent.absolute() # répertoire pytitrator
+app_default_settings = os.path.join(ROOT_DIR, "config/app_default_settings.ini") # récupere le chemin du fichier "app_default_settings.ini"
+device_ids = os.path.join(ROOT_DIR, "config/device_id.ini") # récupère le chemin du fichier "device_id.ini"
 
-class AbsorbanceMeasure(Spectrometer):
+class AbsorbanceMeasure(Spectrometer):  # Hérite de Spectrometer de l'API Oceandirect
     
-    parser = ConfigParser()
+    parser = ConfigParser() # Récupère les informations issus du fichiers "device_id.ini"
     parser.read(device_ids)
-    board_number = int(parser.get('main board', 'id'))
-    VINT_number = int(parser.get('VINT', 'id'))
-    ch_shutter=int(parser.get('lamp', 'shutter'))
+    board_number = int(parser.get('main board', 'id')) # numéro de série de la carte interfacage
+    VINT_number = int(parser.get('VINT', 'id')) # numéro de série du Vint
+    ch_shutter=int(parser.get('lamp', 'shutter')) # port de connexion du shutter de la lamp sur la carte d'interfacage 
     ch_deuterium=int(parser.get('lamp', 'deuterium'))
     ch_halogen=int(parser.get('lamp', 'halogen'))
 
-    #Lamp control 
-    shutter = DigitalOutput()
-    shutter.setDeviceSerialNumber(board_number)
-    shutter.setChannel(ch_shutter)
-    deuterium = DigitalOutput()
-    deuterium.setDeviceSerialNumber(board_number)
+    #Lamp control  - # Initialisation des sorties numériques Phidget - pour commander 
+    shutter = DigitalOutput() # la variable shutter est instancié par la méthode DigitalOutput 
+    shutter.setDeviceSerialNumber(board_number) # shutter - la fonction SetDeviceSerialNumber attend le numéro de serie de la carte pour pouvoir
+    shutter.setChannel(ch_shutter) # shutter - fixer le numero du port de connexion du shutter 
+    deuterium = DigitalOutput() # mm principe pour deuterium
+    deuterium.setDeviceSerialNumber(board_number) 
     deuterium.setChannel(ch_deuterium)
-    halogen = DigitalOutput()
+    halogen = DigitalOutput() # mm principe pour halogene
     halogen.setDeviceSerialNumber(board_number)
     halogen.setChannel(ch_halogen)
 
     def __init__(self): #ihm:IHM est un argument optionnel 
-        self.state='closed'
+        self.state='closed'    # État par défaut
         #Data
         #All spectra are saved with active corrections. It can be nonlinearity and/or electric dark 
         # when activated via methods "set_nonlinearity_correction_usage" and 
@@ -58,6 +58,7 @@ class AbsorbanceMeasure(Spectrometer):
         self.current_intensity_spectrum=None    #Sample or whatever is in the cell
         self.current_absorbance_spectrum=None   #Absorbance
         self.absorbance_spectrum1=None
+        # Infos spectro
         self.wavelengths=None
         self.model=''
         self.serial_number=''
@@ -69,32 +70,32 @@ class AbsorbanceMeasure(Spectrometer):
         self.update_infos()
 
     def connect(self):
-        od = OceanDirectAPI()
+        od = OceanDirectAPI()     # Création d'une instance OceanDirect
         device_count = od.find_usb_devices() #ne pas enlever cette ligne pour détecter le spectro
         #print(device_count)
-        device_ids = od.get_device_ids()
+        device_ids = od.get_device_ids()  
         #print(device_ids)
         if device_ids!=[]:
-            self.id=device_ids[0]
+            self.id=device_ids[0] # Prend le premier spectro trouvé
             try:
                 spectro = od.open_device(self.id) #crée une instance de la classe Spectrometer
                 adv = Spectrometer.Advanced(spectro)
-                det=0
+                det=0 # compteur d'erreurs
                 try:
-                    self.shutter.openWaitForAttachment(1000)
-                    self.shutter_connected=True
+                    self.shutter.openWaitForAttachment(1000) # timer
+                    self.shutter_connected=True # connexion shutter
                 except:
                     self.shutter_connected=False
                     det+=1
                 try:
-                    self.deuterium.openWaitForAttachment(1000)
-                    self.deuterium_connected=True
+                    self.deuterium.openWaitForAttachment(1000) # timer
+                    self.deuterium_connected=True # connexion lampe deuterium
                 except:
                     self.deuterium_connected=False
                     det+=1
                 try:
                     self.halogen.openWaitForAttachment(1000)
-                    self.halogen_connected=True
+                    self.halogen_connected=True # connexion lampe halogen
                 except:
                     self.halogen_connected=False
                     det+=1
@@ -116,21 +117,23 @@ class AbsorbanceMeasure(Spectrometer):
             self.device=spectro
             self.adv=Spectrometer.Advanced(spectro) 
 
-            parser = ConfigParser()
-            parser.read(app_default_settings)
+            parser = ConfigParser() # Si la connexion a réussi
+            parser.read(app_default_settings) # On lit le fichier "app_default_settings"
             former_model=parser.get('spectrometry', 'model')
             self.t_int=int(parser.get('spectrometry', 'tint'))  #ms
             self.averaging=int(parser.get('spectrometry', 'avg'))
             self.acquisition_delay=self.t_int*self.averaging
             
-            #Settings specific to models    #Tint and avg
+            #Settings specific to models    #Tint and avg --- 
+            # --- Ici il défini aussi qui peux faire quoi en fonction du spectromètre reconnue 
+            self.device.set_scans_to_average(1)
             self.device.set_nonlinearity_correction_usage(True)
             if self.model==former_model:
                 self.device.set_integration_time(1000*self.t_int)
-                self.device.set_scans_to_average(self.averaging)
+                #self.device.set_scans_to_average(self.averaging)
             else:
                 self.device.set_integration_time(15000) 
-                self.device.set_scans_to_average(10)
+                #self.device.set_scans_to_average(10)
             
             if self.model=='OceanSR2':  #2k pix pour 700nm
                 self.device.set_boxcar_width(1) #moyennage sur 3 points (2n+1)    
@@ -151,7 +154,7 @@ class AbsorbanceMeasure(Spectrometer):
             self.t_int=self.device.get_integration_time()//1000 
             self.t_int_max=self.device.get_maximum_integration_time()//1000 
             self.t_int_min=self.device.get_minimum_integration_time()//1000 
-            self.averaging=self.device.get_scans_to_average()
+            #self.averaging=self.device.get_scans_to_average()
             self.boxcar=self.device.get_boxcar_width()
             
             self.timer.start()
@@ -212,15 +215,16 @@ class AbsorbanceMeasure(Spectrometer):
     #Récupère autant de spectres que N_avg sur le spectro
     #Fonction vérifiée qui fonctionne. Plus rapide que de faire le moyennage sur le spectro
     def get_N_spectra(self):
-        N=self.device.get_scans_to_average()
+        #N=self.device.get_scans_to_average()
+        N=self.averaging
         try:
-            self.device.set_scans_to_average(1)
+            #self.device.set_scans_to_average(1) - simplification lecture du code
             spectra = [0 for k in range(N)]
             for i in range(N):
                 spectra[i] = self.device.get_formatted_spectrum() #gets the current spectrum
                 # with activated corrections (nonlinearity and/or electric dark) and with
                 # NO substraction of the background
-            self.device.set_scans_to_average(N)
+            # self.device.set_scans_to_average(N) - modif du 20.03.25 - simplification lecture du code
         except OceanDirectError as e:
             logger.error(e.get_error_details())  
         #☺print("spectra",spectra)
@@ -229,9 +233,9 @@ class AbsorbanceMeasure(Spectrometer):
     def get_averaged_spectrum(self):
         """Returns a list of float"""
         t0=time.time()
-        spectra=self.get_N_spectra()
+        spectra=self.get_N_spectra() # récupère la liste des spectres 
         t1=time.time()
-        avg=sp.average_spectra(spectra)
+        avg=sp.average_spectra(spectra) # moyennage des spectres
         t2=time.time()
         self.Irec_time=t1-t0
         self.avg_delay=t2-t1

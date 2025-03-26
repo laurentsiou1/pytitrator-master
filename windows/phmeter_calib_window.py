@@ -7,28 +7,34 @@ from graphic.windows.phmeter_calib_win import Ui_calibration_window
 from subsystems.pHmeter import *
 from datetime import datetime
 
-class PhMeterCalibWindow(QDialog, Ui_calibration_window):
-    def __init__(self, ihm, parent=None):
-        self.ihm=ihm
+class PhMeterCalibWindow(QDialog, Ui_calibration_window): # Définition de la classe PhMeterCalibWindiw, hérite de QDialog et le fichier python de l'interface créé sur QtDesigner
+    def __init__(self, ihm, parent=None): # Le constructeur attend 3 Arguments (self, ihm, et parent=None)
+        #Initialisation de la fenêtre
+        self.ihm=ihm    # Attribut de l'instance IHM
         super(PhMeterCalibWindow,self).__init__(parent)
         self.setupUi(self)
+        self.setWindowTitle("pH meter calibration") # ajout laurent - on execute SetupUi avant, pour ne pas qui reecrase le truc. 
 
+        # Initialisation des variables
         self.U4=0
         self.U7=0
         self.U10=0
         self.used_pH_buffers=set()
 
-    def setupUi(self, Dialog):
-        Dialog.setObjectName("Dialog")
+    def setupUi(self, Dialog): # On rapelle que la fenetre "Ph Meter calibration" a été crée et initialement appelé "Dialog"
+        Dialog.setObjectName("Dialog") # Ici on le rapelle Dialog, mais c'est redondant je crois...
         Dialog.resize(440, 290)
+        # Création de l'interface graphique /!\ ici on ajoutle bouton ok et cancel !!
         self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
+        # self.buttonBox.setWindowTitle("test") # test laurent 17.03.2025
         self.buttonBox.setGeometry(QtCore.QRect(190, 220, 231, 51))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
-        self.buttonBox.setObjectName("buttonBox")
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel) # Ajout du bouton Ok et Cancel
+        self.buttonBox.setObjectName("buttonBox") # de type "buttonBox"
         #print("passage!")
 
-        self.direct_voltage_mV = QtWidgets.QLCDNumber(Dialog)
+        # Un affichage LCD qui montre la tension en direct du pH-mètre
+        self.direct_voltage_mV = QtWidgets.QLCDNumber(Dialog) 
         self.direct_voltage_mV.setGeometry(QtCore.QRect(210, 80, 211, 131))
         self.direct_voltage_mV.setObjectName("direct_voltage_mV")
         self.direct_voltage_mV.setNumDigits(6)
@@ -62,20 +68,21 @@ class PhMeterCalibWindow(QDialog, Ui_calibration_window):
 
         self.retranslateUi(Dialog)
 
-        self.buttonBox.accepted.connect(self.validateCal) #lorsqu'on clique sur valider, la calibration est enregsitrée
-        self.buttonBox.accepted.connect(self.ihm.phmeter.onCalibrationChange)        
-        self.buttonBox.accepted.connect(self.ihm.controlPanel.refreshCalibrationText)        
+        # Connexion des boutons 
+        self.buttonBox.accepted.connect(self.validateCal) #lorsqu'on clique sur valider, la calibration est enregsitrée / validé
+        self.buttonBox.accepted.connect(self.ihm.phmeter.onCalibrationChange) # Met à jour le phmetre      
+        self.buttonBox.accepted.connect(self.ihm.controlPanel.refreshCalibrationText) # Met à jours l'affichage dans le control panel        
         self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
         self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
         
         #self.buttonBox.clicked.connect(self.motherWindow.setOnDirectPH) 
         #pour retrouver le pH en direct quand on revient sur le control pannel 
         
-        if self.ihm.phmeter.state=='open':
+        if self.ihm.phmeter.state=='open': # Affichage de la tension en temps réel
             #activation de l'actualisation de la tension
             #self.phmeter.U_pH.setOnVoltageChangeHandler(self.setOnDirectVoltage)
             #mise sur timer
-            self.ihm.timer_display.timeout.connect(self.setOnDirectVoltage)  #remettre timer1s sinon
+            self.ihm.timer_display.timeout.connect(self.setOnDirectVoltage)  #remettre timer1s sinon - Met à jours l'affichage de la tension 
         
         #rajouter une fonction à la fermeture de la fenetre pour desactiver les actions sur le timer
 
@@ -93,10 +100,10 @@ class PhMeterCalibWindow(QDialog, Ui_calibration_window):
         self.pushButton_pH4.setText(_translate("Dialog", "pH4"))
         self.label_2.setText(_translate("Dialog", "Tensions enregistrées"))
 
-    def setOnDirectVoltage(self): #, ch, voltage):
+    def setOnDirectVoltage(self): #, ch, voltage): # Met à jours l'affichage de la tensio
         self.direct_voltage_mV.display(1000*self.ihm.phmeter.currentVoltage)
 
-    def saveAndShowVoltage(self, screen): #sreen est un objet QLCDNumber
+    def saveAndShowVoltage(self, screen): #sreen est un objet QLCDNumber - # Enregistrement des valeurs de calib - Stocke et affiche la tension enregistrée pour chaque pH.
         U=self.ihm.phmeter.currentVoltage
         print("save voltage")
         if screen==self.lcdNumber_pH4:
@@ -111,7 +118,7 @@ class PhMeterCalibWindow(QDialog, Ui_calibration_window):
         print("voltage=",U)
         screen.display(U)
 
-    def validateCal(self): #pH_buffers est un tuple contenant les valeurs de pH des tampons
+    def validateCal(self): #pH_buffers est un tuple contenant les valeurs de pH des tampons   
         pH_buffers=sorted(list(self.used_pH_buffers))
         self.used_pH_buffers = pH_buffers
         #print("pH buffers : ",type(pH_buffers),pH_buffers)

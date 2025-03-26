@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtSignal, QObject
 from Phidget22.Phidget import *
 from Phidget22.Devices.Log import *
 from Phidget22.Devices.VoltageInput import *
-from Phidget22.Devices.PHSensor import *
+#from Phidget22.Devices.PHSensor import *
 
 import math
 import numpy as np
@@ -20,66 +20,70 @@ import re
 #Récupère le fichier des données de calibration par défaut
 path = Path(__file__)
 ROOT_DIR = path.parent.parent.absolute()
-app_default_settings = os.path.join(ROOT_DIR, "config/app_default_settings.ini")
+app_default_settings = os.path.join(ROOT_DIR, "config/app_default_settings.ini") # va chercher le fichier de config "app_default_setttings" pour charger chemin de "last_cal.ini" + info [pHmeter]
 #latest_cal = "config/latest_cal.ini"
-cal_log = os.path.join(ROOT_DIR, "config/CALlog.txt")
-device_ids = os.path.join(ROOT_DIR, "config/device_id.ini")
+cal_log = os.path.join(ROOT_DIR, "config/CALlog.txt") # infos de la derniere calibration du pH metre ???
+device_ids = os.path.join(ROOT_DIR, "config/device_id.ini") # Input / Output carte d'interfacage
 
 def volt2pH(a,b,U): #m: pente, c: ordonnée à l'origine
 	#U=a*pH+b
 	if a!=0:
-		pH=(U-b)/a
+		pH=(U-b)/a # Conversion par regression linéaire classique - n'utilise pas la datasheet du phmetre de phidget.
 	else:
 		pH=1000
-	return round(pH,3)
+	return round(pH,3)  
 
-class CustomSignals(QObject):
-	stability_reached=pyqtSignal()
+class CustomSignals(QObject):  # Définition de la classe CustomSignals qui hérite de la classeQObject (classe de base pour gérer les signaux et les évenements)
+	stability_reached=pyqtSignal() # On déclares une variable de classe (stability_reached) qui contient un objet pyqtSignal.
 
 class PHMeter:
 
 	parser = ConfigParser()
-	parser.read(device_ids)
-	board_number = int(parser.get('main board', 'id'))
-	VINT_number = int(parser.get('VINT', 'id'))
-	ch_phmeter = int(parser.get('ph meter', 'electrode'))
+	parser.read(device_ids)  # récupération des informations issue du fichier "device_ids"
+	board_number = int(parser.get('main board', 'id'))   # numéro de série de la carte d'interfacage (int parce qu'on attend un nombre entier)
+	#VINT_number = int(parser.get('VINT', 'id')) # numéro de série du Vint 
+	ch_phmeter = int(parser.get('ph meter', 'electrode')) # entrée logique de l'électrode sur la carte d'interfacage 
+	# print(ch_phmeter) - modif laulau 18.03.2025 pour savoir la valeur de ch_phmeter
 
 	def __init__(self):
-		self.U_pH = VoltageInput() #pH-mètre
-		self.state='closed'
+		self.U_pH = VoltageInput() #pH-mètre - récupère la tension issu du pHmetre
+		self.state='closed' # pourquoi ? - définition d'une variable pour suivre l'état du capteur - #Etat initial : capteur non connecté
 
-		self.stab_timer = QtCore.QTimer()
-		self.stab_timer.setInterval(1000)
-		self.stable=False
+		self.stab_timer = QtCore.QTimer() # Timer pour surveiller la stabilité du pH
+		self.stab_timer.setInterval(1000) # Vérification chaque seconde 
+		self.stable=False # Variable pour savoir si le pH est stable
 		self.stab_level=0 #pourcentage de stabilité
-		parser = ConfigParser()
+		parser = ConfigParser() # on utilise ConfigParser pour aller chercher les information dans le fichier "app_default_settings" et les récupérer
 		parser.read(app_default_settings)
-		self.stab_time = int(parser.get('phmeter', 'delta'))
-		self.stab_step = float(parser.get('phmeter', 'epsilon'))
+		self.stab_time = int(parser.get('phmeter', 'delta')) # int delta
+		self.stab_step = float(parser.get('phmeter', 'epsilon')) # float epsilon
 		self.stab_purcent = 0
 		
 		#Création d'un signal PyQt pour informer une fois lorsque l'electrode devient stable
-		self.signals=CustomSignals()
+		self.signals=CustomSignals()   
 	
-		print("default settings file:", app_default_settings)
+		print("default settings file:", app_default_settings)  # que fait exactement ce bout de code ?? pourquoi afficher ca ?
 		parser = ConfigParser()
-		parser.read(app_default_settings)
-		self.relative_calib_path=parser.get('calibration', 'file')
-		self.model=parser.get('phmeter', 'default')
-		self.electrode=parser.get('electrode', 'default')
+		parser.read(app_default_settings) # on vient lire le fichier "app_default_steeings" pour :
+		self.relative_calib_path=parser.get('calibration', 'file') # récupérer les valeurs de la calibration - ces valeurs sont enregistré dans un fichier sauvé a chaque calibration faites.
+		self.model=parser.get('phmeter', 'default')  # Ref du phmetre utilisé
+		self.electrode=parser.get('electrode', 'default') # Ref de electrode utilisé
 
 		self.update_infos()
 
-	def connect(self):
+	def connect(self):  # Définition d'une méthode, intitulé connect, utilisant self --> connexion du phmetre...
 		
 		#Ph mètre Phidget 1130_0 plugged in Voltage Input of main board
-		self.U_pH.setDeviceSerialNumber(self.board_number)
+		"""Connexion du PhMetre Phidget 1130"""
+		# Ici la boucle try sous python permet de d'executer un morceau de code et d'attraper les erreurs qui pourrait se produire (ici la non connexion du ph metre)
+		# empechant le programme de s'areter brutalemen. En gros, ca "try" de se connecter et si ca marche pas, ca plante pas, mais execute la boucle "except" (= sauf, a l'expetion de...). 
+		self.U_pH.setDeviceSerialNumber(self.board_number) # 
 		self.U_pH.setChannel(self.ch_phmeter)
 		try:
-			self.U_pH.openWaitForAttachment(3000)	#beug lors de l'ouverture si pas sous tension
-			self.U_pH.setDataRate(3)
-			self.U_pH.setVoltageChangeTrigger(0.00001) #seuil de déclenchement (Volt)
-			self.getCalData()
+			self.U_pH.openWaitForAttachment(3000)	#beug lors de l'ouverture si pas sous tension (-> fait appel à la méthode de phiodget pour placer un delai)
+			self.U_pH.setDataRate(3) # Pourquoi 3 ?? - Fait appel à la methode : "setDataRate" de Voltage Input pour fixer la fréquence d'échantillonage - fréquence à laquelle sont pris les mesures
+			self.U_pH.setVoltageChangeTrigger(0.00001) #seuil de déclenchement (Volt) - change la valeur du pH quand il y a une variation de 5.10-5 V- ca change tt le temps vu les µV
+			self.getCalData() # Fait appel à la methode défini ICI de "GetCalData" pour fixer les valeurs de calibrations 
 			self.currentVoltage=self.U_pH.getVoltage()
 			self.currentPH=volt2pH(self.a,self.b,self.currentVoltage)
 			self.state='open'
@@ -111,14 +115,14 @@ class PHMeter:
 		parser.write(cal_path_file) 
 		cal_path_file.close()"""
 	
-	def getCalData(self):
+	def getCalData(self): # Récupères les dernieres valeurs de calibrations
 		parser = ConfigParser()
-		parser.read(self.relative_calib_path)
+		parser.read(self.relative_calib_path) # li les valeurs de calibrationd du fichier de calib (Cf. Ligne 67) - les valeurs sont stocké dans "relative_calib_path"
 		self.CALmodel=parser.get('data', 'phmeter')
 		self.CALelectrode=parser.get('data', 'electrode')
 		self.CALdate=parser.get('data', 'date')
 		self.CALtype=parser.get('data', 'calib_type')
-		self.U1=float(parser.get('data', 'U1'))
+		self.U1=float(parser.get('data', 'U1')) # on rentre les valeurs comme attribut de la classe PHMETER
 		self.U2=float(parser.get('data', 'U2'))
 		self.U3=float(parser.get('data', 'U3'))
 		self.a = float(parser.get('data', 'a'))
@@ -153,7 +157,7 @@ class PHMeter:
 		print(self.CALdate, "calibration change on ph meter")
 		self.update_infos()
 	
-	def saveCalData(self,date,caltype,u_cal,coeffs):
+	def saveCalData(self,date,caltype,u_cal,coeffs): # metehode permettant de sauvegarder les fichiers de calibrations ?? ou initilation pour sauvegarde ?
 		parser = ConfigParser()
 		parser.read("config/latest_cal.ini")
 		parser.set('data', 'phmeter', str(self.model))
@@ -188,7 +192,7 @@ class PHMeter:
 			u = np.array([u_cal[0:2]]).T #seulement pH4 et 7
 			#print("pH : ",pH," tensions de calib: ", u)
 			a=(u_cal[1]-u_cal[0])/3;b=u_cal[0]-4*a
-		if pH_buffers == [4,7,10]:
+		if pH_buffers == [4,7,10]: # cas le plus courant
 			pH = np.array([4,7,10])
 			u = np.array([u_cal[0:3]]).T #pH 4, 7 et 10
 			#print("pH : ",pH," tensions de calib: ", u)
@@ -199,11 +203,11 @@ class PHMeter:
 		self.b=b
 		return a, b
 	
-	def activateStabilityLevel(self):
+	def activateStabilityLevel(self): 
 		self.ph0=self.currentPH
 		self.stab_timer.start()
 		try:
-			self.stab_timer.disconnect() #important pour ne pas executer la fonction plusieurs fois à chaque appel
+			self.stab_timer.disconnect() # important pour ne pas executer la fonction plusieurs fois à chaque appel
 		except:
 			pass
 			#print("ne peut pas deconnecter les signaux sur le timer")

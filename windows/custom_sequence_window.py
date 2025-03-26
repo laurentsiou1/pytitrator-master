@@ -15,6 +15,8 @@ import file_manager as fm
 from file_manager import Data 
 import os
 
+from windows.Exit_confirmation_window import ExitConfirmationWindow # Ajout laurent (POP UP)
+
 path_internal=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 play_icon_path=os.path.join(path_internal, "graphic/images/play_icon.png")
 pause_icon_path=os.path.join(path_internal, "graphic/images/pause_icon.png")
@@ -24,12 +26,13 @@ class CustomSequenceWindow(QMainWindow,Ui_CustomSequenceWindow):
     absorbance_spectrum1=None
 
     def __init__(self, ihm, parent=None):   #win:WindowHandler
-        super(CustomSequenceWindow,self).__init__(parent)
+        super(CustomSequenceWindow,self).__init__(parent) # On récupère ihm (l'interface principale) et seq (la séquence en cours).
         self.setupUi(self)
         self.ihm=ihm
-        self.seq=self.ihm.seq
+        self.seq=self.ihm.seq 
         seq=self.seq
         
+        # Création des graphiques
         #Sizing PlotWidgts inside QTabWidgets
         (w,h)=(self.spectra_tabs.geometry().width(),self.spectra_tabs.geometry().height())
         rect=QtCore.QRect(0,0,w-5,h-32)
@@ -55,19 +58,19 @@ class CustomSequenceWindow(QMainWindow,Ui_CustomSequenceWindow):
         #self.current_intensity_plot=self.all_intensity.plot([0],[0])
         self.all_intensity_plot=self.all_intensity.plot([0],[0])
         
-        #connexions
-        self.spectrometry.clicked.connect(self.ihm.openSpectroWindow)
-        self.syringes.clicked.connect(self.ihm.openDispenserWindow)
-        self.pause_resume_button.clicked.connect(self.seq.pause_resume)
+        #connexions (des boutons) - Relie les boutons à leurs actions :
+        self.spectrometry.clicked.connect(self.ihm.openSpectroWindow) # Ouvre la fenêtre du spectro et de la seringue.
+        self.syringes.clicked.connect(self.ihm.openDispenserWindow) 
+        self.pause_resume_button.clicked.connect(self.seq.pause_resume) # Pause/reprise de la séquence (pause_resume).
         #saving
-        self.actionsave.triggered.connect(lambda : self.ihm.seq_data.createSequenceFiles(seq)) 
+        self.actionsave.triggered.connect(lambda : self.ihm.seq_data.createSequenceFiles(seq))  # Sauvegarde les données (createSequenceFiles).
         #la fonction ne s'applique pas sur le self, d'où le lambda ?
-        self.pump_speed_volt.valueChanged.connect(self.update_pump_speed)
+        self.pump_speed_volt.valueChanged.connect(self.update_pump_speed) # Met à jour la vitesse de la pompe.
         
         ##Initialisation en fonction de la config 
         self.N_mes=seq.N_mes
         
-        #Paramètres d'expérience
+        #Paramètres d'expérience - Affiche les paramètres de l'expérience dans un champ de texte. coin haut droit
         self.experiment_parameters.setPlainText("\nNom de l'expérience : "+str(seq.experience_name)\
         +"\nDescription : "+str(seq.description)\
         +"\nFibres : "+str(seq.fibers)\
@@ -129,7 +132,7 @@ class CustomSequenceWindow(QMainWindow,Ui_CustomSequenceWindow):
         #self.direct_pH.display(self.ihm.phmeter.currentPH) #pH instantané
 
     #DIRECT
-    def refresh_screen(self):
+    def refresh_screen(self): # Rafraîchir les données de l'expérience 
         #Countdown
         try:
             tm=datetime.now()
@@ -141,7 +144,7 @@ class CustomSequenceWindow(QMainWindow,Ui_CustomSequenceWindow):
             self.countdown.setProperty("value", remaining)
         except:
             pass
-        #PhMeter
+        #PhMeter - Affiche un compte à rebours pour la prochaine mesure + met à jours la valeur du phmetre et de la stabilisation
         if self.ihm.phmeter.state=='open':
             self.direct_pH.display(self.ihm.phmeter.currentPH)
             self.stab_time.setProperty("value", self.ihm.phmeter.stab_time)
@@ -153,7 +156,7 @@ class CustomSequenceWindow(QMainWindow,Ui_CustomSequenceWindow):
             self.pump_speed_volt.setProperty("value", self.ihm.peristaltic_pump.mean_voltage)
 
     #Displaying current spectra
-    def refresh_direct_spectra(self):
+    def refresh_direct_spectra(self): # Affiche le spectre en direct
         if self.ihm.spectro_unit.state=='open': #Intensity live
             try:
                 self.all_intensity.removeItem(self.intensity_current_plot)
@@ -222,20 +225,30 @@ class CustomSequenceWindow(QMainWindow,Ui_CustomSequenceWindow):
         self.table_vol_pH[nb-1][2].clear()
         self.table_vol_pH[nb-1][2].setText(str(dt))
 
-    def pause(self):
+    def pause(self): # Gestion pause 
         self.pause_resume_button.setIcon(QtGui.QIcon(play_icon_path))
 
-    def resume(self):
+    def resume(self): # Gestion reprise
         self.pause_resume_button.setIcon(QtGui.QIcon(pause_icon_path))
 
-    def closeEvent(self, event):
-        print("User has clicked the red x on the custom sequence window")
+    def closeEvent(self, event): # Fermeture d'evenement - c'est ici que l'on doit venir jouer pour gérer cela
+        #print("User has clicked the red x on the custom sequence window")
         #test : ça ne permet pas de supprimer l'objet 
-        event.accept()
-        self.seq.stop()
-        self.ihm.updateDefaultParam()
-        self.close()
-        #self.__del__()
+        #event.accept()
+        #self.seq.stop()
+        #self.ihm.updateDefaultParam()
+        #self.close()
+        """Intercepte la fermeture et demande confirmation."""
+        event.ignore()  # Empêche la fermeture directe
+        self.confirm_close() # Ouvre la fenetre de confirmation Exit - association de la fonction confirm_clos
     
-    """def __del__(self):
-        pass"""
+    def confirm_close(self):
+        """Affiche une fenêtre de confirmation avant de quitter."""
+        dialog = ExitConfirmationWindow(self)   # Crée la pop-up avec `self` comme parent
+        if dialog.exec_() == QtWidgets.QDialog.Accepted: # Ici, exec_ bloque l'execution jusqu'a que l'utilisateur clique sur oui
+            print("Fermeture confirmée")
+            self.seq.stop() # # Stoppe la séquence
+            self.deleteLater() # force la destruction de la fenetre
+            self.close()  # Ferme la fenêtre CustomSequenceWindow
+        else: # L'utilisateur à cliqué sur non
+            print("Fermeture annulée") 

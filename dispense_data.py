@@ -6,10 +6,11 @@ import numpy as np
 import math
 
 #data du 23/01/2024
-v_23_01_2024 = np.array([0,100,200,300,400,500,550,600,650,700,750,800,850,900,950,1050,1150,1250,1450,1850])
+# Sert à calculer les courbes de dispenses
+v_23_01_2024 = np.array([0,100,200,300,400,500,550,600,650,700,750,800,850,900,950,1050,1150,1250,1450,1850]) # cumule de soude ajoutée @10-2 M (mol/L)
 pH_dommino_23_01_2024=np.array([4.01, 4.15,	4.27, 4.5, 4.82, 5.49, 5.85, 6.15, 6.5,	6.91, 7.33,	7.72, 8.18,	8.54, 8.75,	9.19, 9.4, 9.51, 9.74, 10.03])
-pH_HI5221_23_01_2024=np.array([4.09, 4.21, 4.36, 4.56, 4.9,	5.59, 5.98,	6.34, 6.69,	7.09, 7.38,	7.75, 8.29,	8.69, 8.92,	9.32, 9.54,	9.69, 9.91,	10.19])
-#fit sur pH-mètre dommino le 23/01/2024, fait sur excel
+pH_HI5221_23_01_2024=np.array([4.09, 4.21, 4.36, 4.56, 4.9,	5.59, 5.98,	6.34, 6.69,	7.09, 7.38,	7.75, 8.29,	8.69, 8.92,	9.32, 9.54,	9.69, 9.91,	10.19]) # pHmetre HANNA Instrument 
+#fit sur pH-mètre dommino le 23/01/2024, fait sur excel - Polynome de degrés 5
 param_dommino_23_01_2024 = [3.9266, -133.37, 1792.2, -11910., 39276., -51141.] 
 
 #données des mesures IPGP du 6/03/2024 avec lHA 2.5ppm et bullage N2 (sans oxygène)
@@ -18,8 +19,8 @@ pH_N2_6_03_2024 = np.array([4.041, 4.236, 4.467, 4.737, 5.061, 5.535, 6.758, 8.8
 #fit réalisé sur excel avec polynôme de deg. 5.
 param_IPGP_N2_6_03_2024 = np.array([4.5281, -155.77, 2119.7, -14265., 47527., -62340.])
 
-def dispense_function_uL(pH, atmosphere=True):
-    """Retourn le volume correspondant au pH. 
+def dispense_function_uL(pH, atmosphere=True): # Par default, on prend le cas des conditions atmosphéiqu (becher à l'air libre)
+    """Retourne le volume correspondant au pH. 
     Suppose utilisation de soude NaOH concentration 10e-2 mol/L.
     On suppose être au pH4 initialement et un volume d'échantillon de 50mL"""
     if atmosphere==True:

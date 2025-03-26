@@ -49,12 +49,13 @@ def intensity2absorbance(spectrum, ref_spec, dark=None):
     dt=t1-t0
     return abs_spectrum_round, dt
 
-def correct_spectrum_from_dilution(spec,dil):
-    """spec is a spectrum : list of float, dil is a float
+def correct_spectrum_from_dilution(Abs,dil):
+    """spec is an absorbance spectrum : list of float, dil is a float
     returns a list of float"""
-    #N=len(spec)
-    #cs=[spec[k]*dil for k in range(N)]
-    cs=[s*dil for s in spec]
+    """cs=Abs
+    for k in range(len(Abs)):   #k = 0, 1, ..., len(Abs)-1
+        cs[k]=Abs[k]*dil""" #option 1 
+    cs=[a*dil for a in Abs] #chaque valeur du tableau est multipliée par le facteur de dilution
     return cs
 
 def correct_spectra_from_dilution(spec,dil):

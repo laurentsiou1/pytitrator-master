@@ -13,7 +13,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_calibration_window(object):
     def setupUi(self, calibration_window):
-        calibration_window.setObjectName("calibration_window")
+        calibration_window.setObjectName("pH_meter_calibration")
+        calibration_window.setWindowTitle("pH_meter_calibration")
         calibration_window.resize(440, 290)
         self.buttonBox = QtWidgets.QDialogButtonBox(calibration_window)
         self.buttonBox.setGeometry(QtCore.QRect(190, 220, 231, 51))
@@ -55,7 +56,7 @@ class Ui_calibration_window(object):
 
     def retranslateUi(self, calibration_window):
         _translate = QtCore.QCoreApplication.translate
-        calibration_window.setWindowTitle(_translate("calibration_window", "pH meter calibration"))
+        calibration_window.setWindowTitle(_translate("calibration_window", "pH_meter_calibration"))
         self.label.setText(_translate("calibration_window", "tension (mV) en direct"))
         self.pushButton.setText(_translate("calibration_window", "pH10"))
         self.pushButton_2.setText(_translate("calibration_window", "pH7"))
