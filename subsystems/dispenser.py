@@ -186,30 +186,33 @@ class PhidgetStepperPump(SyringePump): #remplace l'ancienne classe SyringePump
     port_b = int(parser.get('VINT', 'stepper_b'))
     port_c = int(parser.get('VINT', 'stepper_c'))
 
-    def __init__(self,id,vol,syringe_type='Trajan SGE 500uL'): #par défaut une Trajan SGE 500uL
+    def __init__(self,id,vol,syringe_type='Trajan SGE 500uL'): #par défaut une Trajan SGE 500uL  ---- Initialisation 
         
         self.vol=vol
         self.added_vol_uL=0
 
-        self.stepper = Stepper() #contrôle du stepper
-        self.security_switch = DigitalInput() #interrupteur bout de course seringue   
-        self.reference_switch = DigitalInput() #interrupteur pour positionnement de référence
-        self.electrovalve = DigitalOutput() #contrôle électrovannes
+        self.stepper = Stepper() # contrôle du stepper
+        self.security_switch = DigitalInput() # interrupteur bout de course seringue   
+        self.reference_switch = DigitalInput() # interrupteur pour positionnement de référence
+        self.electrovalve = DigitalOutput() # contrôle électrovannes
 
         parser2 = ConfigParser()
-        parser2.read(device_ids)
+        parser2.read(device_ids) # On lit le fichier de config "device_id"
         #print("device_ids : ", device_ids)
+        parser3 = ConfigParser()
+        parser3.read(app_default_settings)
         
         self.stepper.setDeviceSerialNumber(self.VINT_number)  #683442
         
         self.syringe_type=syringe_type
         if syringe_type=='Trajan SGE 500uL':
-            self.size = 400 #uL : useful volume on syringe
+            self.size = int(parser3.get('syringes', 'max_volume')) #uL : useful volume on syringe
             #uL use only 400 on a 500uL syringe
             #Pour ne pas toucher le bout de la seringue
+            # 26.03.2025 - valeur modifié et passé à 500µL ... LS
         else:
             pass
-
+   
         self.model='Phidget Stepper STC1005_0'
         self.id=id
         
@@ -452,7 +455,7 @@ class PhidgetStepperPump(SyringePump): #remplace l'ancienne classe SyringePump
     #def configForPurge(self):
 
 
-    def simple_dispense(self,vol,ev=1):
+    def simple_dispense(self,vol,ev=1):  # une simple dispense, c'est à dire le cas où l'on doit faire juste une course (pas de refill)
         pos0 = self.stepper.getPosition()
         #print("position avant dispense : ",pos0)
         if ev==1:
@@ -495,25 +498,31 @@ class PhidgetStepperPump(SyringePump): #remplace l'ancienne classe SyringePump
             print("Dispense with mulitple stages")
         return disp #bool about dispense was achived or not 
     
-    def dispense(self, vol):
+    def dispense(self, vol): # Fait le cas où il y a plusieurs fonctions à dispenser...
         #prévoir le cas où le piston touche le bout (car mauvaise valeur de position initiale)
         # 
         # il faut savoir compter la quantité lors de l'arrêt. 
         # Puis recharger
         # Puis reprendre la dispense là où elle s'est arrêtée. 
+        """ Le cas où il y a plusieurs dispenses de retour à faire
+            
+            Le code vérifie ensuite si vol <= level, auquel cas une simple injection suffit.
+            - Sinon il entre dans une gestion plus complexe :
+            - Si le reste r est inférieur au niveau → on injecte direct
+            - Sinon, il faut d'abord recharger (full_refill()) avant d'injecter"""
 
         print("starting dispense %f uL" %vol)
         capacity=self.size
-        level=self.level_uL
-        q=int(vol//capacity)
-        r=vol%capacity
+        level=self.level_uL # Volume restant dans la seringue
+        q=int(vol//capacity) # ici, c'est le nombre de cycle (division entiere)
+        r=vol%capacity       # ici c'est le reste de la division entière. Donc le reste à injecter
         print(q,"x",self.size,"+",r,"uL")
-        if vol<=level: #cas classique de simple dispense
+        if vol<=level: #cas classique de simple dispense  -- okkk, si vol est inférieur ou egale à level, on fait une simple disense.
             self.simple_dispense(vol)
         else:   #vol>level #dispense with multiple stages
-            r2=r-level
+            r2=r-level # Sinon le reste2 est égal au reste - ce qu'il ya dans la serinuge
             #print("r2=",r2)
-            if r2<=0: #r<=level     #On peut dispenser le reste sans recharger
+            if r2<=0: #r<=level     #On peut dispenser le reste sans recharger 
                 #donc on commence par dispenser le reste
                 self.simple_dispense(r)
                 self.full_refill()
@@ -532,7 +541,7 @@ class PhidgetStepperPump(SyringePump): #remplace l'ancienne classe SyringePump
         #self.vol.add(vol)   #update in volume tracking
         print("end of dispense\n")
 
-    def standard_dispense_for_calib(self):
+    def standard_dispense_for_calib(self): # Methode utilisé lors de la disp 400 dans l'onglet "Settings"
         print("400uL target dispense for calibration")
         self.dispense(400)  #visée 400uL
     
@@ -641,7 +650,7 @@ class KDS_Legato100(SyringePump):
         except:
             pass
         
-        self.size=300    #définition de la courser complète (en mL)
+        self.size=300    #définition de la courser complète (en mL)  --
     
     def setValveOnRefill(self):
         time.sleep(1)

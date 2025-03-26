@@ -72,6 +72,7 @@ class SequenceConfigWindow(QDialog,Ui_sequenceConfig): #(object)
             self.fixed_delay_box.setDisabled(True)
             self.agitation_delay_box.setDisabled(True)
             self.sequence_config_file.setDisabled(False) #chemin fichier de sequence
+            self.V_init.setDisabled(True) # modif laurent - on grise dans le mode from file car initialisé par le fichier de config
         else:
             self.Nmes.setDisabled(False)
             self.pH_init.setDisabled(False)
@@ -79,6 +80,7 @@ class SequenceConfigWindow(QDialog,Ui_sequenceConfig): #(object)
             self.fixed_delay_box.setDisabled(False)
             self.agitation_delay_box.setDisabled(False)
             self.sequence_config_file.setDisabled(True) #chemin du fichier de sequence
+            self.V_init.setDisabled(False) # modif laurent -- dans les autres cas pas griser
 
     def browsefolder(self): # Sélection du dossier de sauvegarde
         parser = ConfigParser()

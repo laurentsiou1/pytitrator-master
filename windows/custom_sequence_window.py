@@ -77,6 +77,9 @@ class CustomSequenceWindow(QMainWindow,Ui_CustomSequenceWindow):
         +"\nFlowcell : "+str(seq.flowcell)\
         +"\nDispense mode : "+str(seq.dispense_mode))
 
+        #Ajout d'un label pour les mesures en cours   ---------------------------------------------------------------------- Modif LS
+        self.measurement_status.setText("Waiting to start measurement sequence...")
+
         #Spectro
         if ihm.spectro_unit.state=='open':
             self.lambdas=self.ihm.spectro_unit.wavelengths 
@@ -204,11 +207,14 @@ class CustomSequenceWindow(QMainWindow,Ui_CustomSequenceWindow):
     
     #volume, pH and times
     def append_vol_in_table(self,nb,vol): #nb numero de mesure 1 à Nmes
+        self.measurement_status.setText(f"Measurement {nb}/{self.N_mes} in progress...") # -------------------------------------------modif LS
         self.table_vol_pH[nb-1][0].setObjectName("vol"+str(nb))
         self.table_vol_pH[nb-1][0].setAlignment(QtCore.Qt.AlignCenter)
         self.grid_mes_pH_vol.addWidget(self.table_vol_pH[nb-1][0], nb, 0, 1, 1)
         self.table_vol_pH[nb-1][0].clear()
         self.table_vol_pH[nb-1][0].setText(str(vol))
+        if nb == self.N_mes:
+            self.measurement_status.setText("Sequence finished!") # -------------------------------------------------- modif LS
     
     def append_pH_in_table(self,nb:int,pH:str): #nb=numero de la mesure 1 à Nmes
         """adds pH measures in table"""

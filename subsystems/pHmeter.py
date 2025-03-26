@@ -81,7 +81,7 @@ class PHMeter:
 		self.U_pH.setChannel(self.ch_phmeter)
 		try:
 			self.U_pH.openWaitForAttachment(3000)	#beug lors de l'ouverture si pas sous tension (-> fait appel à la méthode de phiodget pour placer un delai)
-			self.U_pH.setDataRate(3) # Pourquoi 3 ?? - Fait appel à la methode : "setDataRate" de Voltage Input pour fixer la fréquence d'échantillonage - fréquence à laquelle sont pris les mesures
+			self.U_pH.setDataRate(3) # Pourquoi 3 ? --> Fait appel à la methode : "setDataRate" de Voltage Input pour fixer la fréquence d'échantillonage - fréquence à laquelle sont pris les mesures
 			self.U_pH.setVoltageChangeTrigger(0.00001) #seuil de déclenchement (Volt) - change la valeur du pH quand il y a une variation de 5.10-5 V- ca change tt le temps vu les µV
 			self.getCalData() # Fait appel à la methode défini ICI de "GetCalData" pour fixer les valeurs de calibrations 
 			self.currentVoltage=self.U_pH.getVoltage()
